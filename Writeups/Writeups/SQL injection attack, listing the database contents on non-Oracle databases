@@ -1,0 +1,151 @@
+Vulnerability: SQL Injection – UNION-Based Enumeration on Non-Oracle Databases
+Description
+
+The application's category filtering endpoint is vulnerable to UNION-based SQL Injection.
+The category parameter is concatenated directly into an SQL query without sanitization, allowing an attacker to modify the intended logic and extract arbitrary database contents.
+
+By injecting a crafted UNION SELECT payload, an attacker can:
+
+enumerate the database version (@@version – indicates a Microsoft SQL Server backend)
+
+list all tables via information_schema.tables
+
+list columns of specific tables
+
+extract sensitive user data
+
+This confirms that the backend is running a non-Oracle SQL database (Microsoft SQL Server) and exposes its exact version number.
+
+Attack Surface
+
+Vulnerable parameter:
+
+/filter?category=<input>
+
+
+Backend query executed:
+
+SELECT * FROM products WHERE category = '<input>';
+
+
+Because the value is inserted directly into the query:
+
+quotes can be broken,
+
+attacker SQL can be appended,
+
+and the backend does not validate column counts or data types.
+
+This makes the endpoint fully vulnerable to UNION-based SQLi.
+
+Exploitation Steps
+
+Navigate to the home page and select any product category.
+
+Intercept the request using Burp Suite (recommended).
+
+Modify the category parameter with injection payloads.
+
+Use ORDER BY to identify the number of columns.
+
+Use UNION SELECT to extract system metadata and database contents.
+
+The response page displays attacker-supplied data instead of normal products.
+
+Payloads Used
+1. Determine number of columns
+' ORDER BY 2--
+
+2. Extract SQL Server version
+' UNION SELECT @@version, NULL--
+
+3. Enumerate all tables
+' UNION SELECT table_name, NULL FROM information_schema.tables--
+
+4. Enumerate all columns of a chosen table
+' UNION SELECT column_name, NULL FROM information_schema.columns 
+  WHERE table_name = 'users_ueqxii'--
+
+5. Dump sensitive data
+' UNION SELECT username, password FROM users_ueqxii--
+
+Technical Explanation
+
+UNION SELECT merges attacker-controlled query results with the legitimate query output.
+
+@@version returns SQL Server version, build, and OS information.
+
+information_schema.tables and information_schema.columns expose complete database structure.
+
+The -- comment truncates the rest of the original SQL query.
+
+The vulnerable endpoint displays this data directly in the UI, confirming full SQL injection exploitation.
+
+Impact: Critical
+
+This vulnerability is classified as Critical (CVSS 9.8+) because it enables:
+
+Data Exposure
+
+usernames
+
+passwords
+
+table structure
+
+internal database schemas
+
+System Reconnaissance
+
+exact DB version, edition, and patch level
+
+OS metadata
+
+ability to map known CVEs for targeted attacks
+
+Further Exploitation Potential
+
+privilege escalation
+
+authentication bypass
+
+remote code execution (version-dependent)
+
+lateral movement across the network
+
+SQL Injection combined with version disclosure massively increases risk and lowers attacker complexity.
+
+Recommendations / Fixes
+1. Use Parameterized Queries (Prepared Statements)
+
+Prevent user input from being injected into SQL strings.
+
+2. Enforce Strict Server-Side Input Validation
+
+Reject unsafe characters:
+
+'  "  ;  --  #  /*  */  
+
+3. Disable Detailed Error Messages
+
+Do not expose SQL Server errors, stack traces, or debug information to the client.
+
+4. Use Least-Privilege Database Accounts
+
+The application should NOT have permission to read:
+
+@@version
+
+information_schema
+
+system metadata
+
+5. Add WAF Filtering Rules
+
+Block:
+
+UNION SELECT patterns
+
+comment usage (--, /* */)
+
+boolean/time-based injection patterns
