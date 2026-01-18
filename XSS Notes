@@ -1,1 +1,51 @@
+DOM XSS in JQuery Selector
+
+var post = $('section.blog-list h2:contains('+ decodeURIComponent(window.location.hash.slice(1)) + ')');
+ searches for h2 element that contains the string that is provided as the argument 
+.slice(1) removes the first element for example window.location.hash is #123 and slice(1) makes the string acts as a array and provides values after the hash
+if the element post exists it scrolls the element into view
+changing the hash value to #Game it jumps to the h2 element the contains the element
+
+Vulenerabilty with J Query 
+We have control over the argument in J Query
+(currently patched)
+
+Going into console
+ calling  $('section.blog-list h2:contains(Game)') aka hard coding 
+  result is a J Quert object with a lenght property of 1 means 1 mthc
+  can expose DOM using var post = $ $('section.blog-list h2:contains
+  post.get(0);
+  we can see the DOM element exposed 
+
+  using a search term that does not exist
+  var post = $('section.blog-list h2:contains(Gme)')
+  post;
+  we can see that it doesn;t have any mathches but it returns J Quert object with lenght 0 
+  if(post) (console.log('true'))
+  prints true as it exists
+  post.get(0); print undefined as it lenght is 0 
+
+Finding the Vulnerabilty 
+  var post  = $('section.blog-list h2:contains(<h1>Wildsh0ck</h1>)') using tags as parameters
+  checking post;
+  we appear to have a match but its not possible as the text wildsh0ck doesn't exist
+  we can check the DOM element using post.ge(0);
+  we get a h1 element which contains our text 
+  meaning it created a DOM element
+  But this is not on the page as in the properties of the DOM element and the parent element is NULL 
+  meaning its not attached 
+  so we can re-assign 
+  post = post.get(0);
+  lets attach it to a DOM with attatching a parent
+  Using element academyLabHeader
+  var mynode = document.getElementID('academyLabHeader')
+  print mynode will result in <div id='academyLabHeader')
+  mynode.appendChild(post);
+  and we can see the we appended the text wildsh0ck to the main page
+  J Query is creating a DOM in the background 
+  let myimage = document.createElement('img')
+  myimg; will print dom node with image tag
+  myimg.src = 0 so 0 as source will error out
+  a HTTP req as been requested with 404 error 
+  a subsequent HTTP req has been sent looking for the image
 
