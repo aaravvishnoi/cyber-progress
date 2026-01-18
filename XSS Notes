@@ -49,3 +49,7 @@ Finding the Vulnerabilty
   a HTTP req as been requested with 404 error 
   a subsequent HTTP req has been sent looking for the image
 
+Creating the actual payload 
+ using iframe to embed another html document within the current webpage
+ <iframe src = "https://attacklab.net/#" onload = this.src+= '<img src =x onerror= print()>'"></iframe>
+ this payload opens the print page pop up 
