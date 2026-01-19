@@ -1,0 +1,47 @@
+DOM XSS in jQuery selector sink using a hashchange event
+
+Serverity and Impact
+  This vulnerability allows an attacker to execute Javascripts in a victims browser by injection malicious input in a jQuery selector. Sucesfull exploitation enables DOM manipulation and
+  Javascript execution in the vulnerable page which can be leverage for session token, credential harvesting or UI redressing attacks against users who visited a crafted URL.
+
+AFFECTED COMPONENT
+  Page: Blog Home Page
+  Vulnerable Javascript:
+    var post = $('section.blog-list h2:contains('+decodeURIComponent(window.location.hash.slice(1)) + ')');
+  source: window.location.hash
+  sink: jQuery selector
+
+ROOT CAUSE ANALYSIS  
+  User passed data from window.location.hash is passed directly into jQuery Selector without sanitization or validation
+
+  jQuery passed the input as HTML code when special characters are passed through resulting in the creation of DOM elements rather then treating it as a text comparasion. This allows the
+  attacker to inject HTML elements that should not exist but create DOM elements that exist as child nodes and then add a parent node to connect it to the html enabling DOM based 
+  cross site scripting 
+
+STEPS TO REPRODUCE 
+  1) Going to vulnerable page in our case it is https://0a7e00610476429880a5265a004300d7.web-security-academy.net
+  2) Supply a crafted hash value in the URL containing HTML markup:
+    <iframe src = "https://attacklab.net/#" onload = this.src+= '<img src =x onerror= print()>'"></iframe>
+  3) This page prorcesess the input through location.hash and passes it without sanitization or validation to jQuery selector which treats it as an HTML snippet 
+  4) The injected code renders a copy of the webpage which issues the print command in the victims browser enabling the attacker DOM manipulation.
+
+PROOF OF EXPLOITATION
+  By injecting HTML into the selector argument, jQuery creates a detached DOM node instead of performing a string match. Once attached to the document, the injected node can execute JavaScript (e.g., via event handlers or malicious elements), demonstrating arbitrary DOM injection and script execution.
+  This behavior confirms that attacker-controlled input is interpreted as HTML rather than treated as inert text.
+
+Attack Scenario
+  An attacker could send a crafted link containing a malicious hash payload to a victim. When the victim visits the link, the injected content is processed by the page’s JavaScript 
+  logic, resulting in attacker-controlled DOM manipulation. This can be escalated to execute malicious scripts, steal session data, or perform actions on behalf of the victim without 
+  user interaction.
+
+Remediation
+  Avoid using user-controlled input inside jQuery selectors.
+  Do not pass untrusted data into :contains() or similar selector-based APIs.
+  Treat hash values as untrusted input and apply strict validation.
+  Where possible, use safer DOM APIs that do not interpret input as HTML.
+  Consider refactoring logic to compare text values without dynamic selector construction.
+Conclusion
+  The vulnerability arises from unsafe use of attacker-controlled input within a jQuery selector, leading to unintended DOM creation and potential JavaScript execution. 
+  Proper input handling and safer DOM manipulation practices are required to prevent exploitation.
+
+
