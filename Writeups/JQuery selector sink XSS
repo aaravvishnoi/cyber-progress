@@ -2,7 +2,7 @@ DOM XSS in jQuery selector sink using a hashchange event
 
 Severity and Impact
   This vulnerability allows an attacker to execute JavaScript in a victim's browser by injecting malicious input in a jQuery selector. Successful exploitation enables DOM manipulation and
-  JavaScript execution in the vulnerable page, which can be leveraged for session token, credential harvesting,g or UI redressing attacks against users who visited a crafted URL.
+  JavaScript execution in the vulnerable page, which can be leveraged for session token, credential harvesting, or UI redressing attacks against users who visited a crafted URL.
 
 AFFECTED COMPONENT
   Page: Blog Home Page
