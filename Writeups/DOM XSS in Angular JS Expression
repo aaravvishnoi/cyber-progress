@@ -1,1 +1,29 @@
+DOM XSS in AngularJS expression with angle brackets and double quotes, HTML-encoded
 
+Severity and Impact:
+  This vulnerability allows an attacker to execute JavaScript in the victim's browser by injecting malicious input in the search bar. When a directive is added to the HTML code, 
+  An attacker can execute JavaScript expressions within double curly braces, which can be leveraged for session token, credential harvesting, or UI redressing attacks against users 
+  who visited a crafted URL
+
+Affected Component: 
+  Client-side AngularJS template rendering logic responsible for evalutating usr controlled expressions within the page.
+  Page: Blog Home Page
+  Source: user-controlled data (e.g., location.search, location.hash, or reflected JSON)
+  Processing: AngularJS expression parsing ({{ }})
+  Sink: AngularJS expression evaluator ($parse, interpolation engine)
+
+Root Cause Analysis: 
+  User passed the input as HTML code in the search bar, which is treated as an Angular expression that can invoke JS, as the input was not sanitized or validated. This allows the attacker to 
+  send malicious code that is incorrectly treated as valid JavaScript instead of plain HTML text. This is due to the vulnerability in AngularJS, which is unsafe binding. 
+  It allows the attacker to break out of the text box using the double curly braces "{{ }}". 
+
+Steps To Reproduce: 
+  1) Going to the vulnerable page, which in our case is the Blog Home Page
+  2) Entering a arbituary text in the search box and observing that the random string is enclosed in an ng-app
+  3) We can check for the AngularJS vulnerability by searching for the following term "{{1+1}} if the result is something like "No results for 2", then there is a vulnerability
+  4) Submit a malicious AngularJS expression capable of invoking JavaScript execution.
+
+Proof of Exploitation: 
+  By injecting a malicious AngularJS expression into the search input, the application evaluates attacker-controlled expressions during template rendering. The provided payload invokes the 
+  JavaScript alert() function via AngularJS’s expression evaluation engine, demonstrating arbitrary JavaScript execution in the browser without user interaction beyond submitting the 
+  crafted input.
